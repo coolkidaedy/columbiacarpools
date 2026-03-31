@@ -1,0 +1,114 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Airport {
+  JFK
+  LGA
+  EWR
+}
+
+enum GenderPref {
+  NONE
+  WOMEN_ONLY
+  MEN_ONLY
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum RideStatus {
+  OPEN
+  FULL
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  uni       String   @unique
+  name      String?
+  school    String?  // "CC" | "SEAS" | "Barnard" | "GS" | "Graduate" | "Other"
+  schoolCustom String? // only set when school == "Other"
+  year      String?  // "2025" | "2026" | "2027" | "2028" | "Graduate" | "Other"
+  yearCustom String? // only set when year == "Other"
+  createdAt DateTime @default(now())
+
+  ridesPosted  Ride[]          @relation("PostedBy")
+  requests     JoinRequest[]   @relation("RequestedBy")
+  reports      Report[]
+}
+
+model Ride {
+  id            String     @id @default(cuid())
+  posterId      String
+  poster        User       @relation("PostedBy", fields: [posterId], references: [id])
+
+  airport       Airport
+  terminal      String?
+  departureTime DateTime   // when they're leaving campus
+  flightTime    DateTime   // actual flight takeoff
+  maxRiders     Int        @default(3)
+  genderPref    GenderPref @default(NONE)
+  notes         String?    // optional freetext e.g. "meeting at butler gates"
+  status        RideStatus @default(OPEN)
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  requests      JoinRequest[]
+  reports       Report[]
+
+  @@index([airport])
+  @@index([departureTime])
+  @@index([status])
+}
+
+model JoinRequest {
+  id          String        @id @default(cuid())
+  rideId      String
+  ride        Ride          @relation(fields: [rideId], references: [id])
+  requesterId String
+  requester   User          @relation("RequestedBy", fields: [requesterId], references: [id])
+
+  status      RequestStatus @default(PENDING)
+  token       String        @unique @default(cuid()) // for one-click email links
+  tokenExpiry DateTime      // set to +24h on creation
+  message     String?       // optional note from requester to poster
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([rideId, requesterId]) // one request per person per ride
+  @@index([token])               // fast lookup for email link clicks
+  @@index([status])
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  rideId     String
+  ride       Ride     @relation(fields: [rideId], references: [id])
+  reporterId String
+  reporter   User     @relation(fields: [reporterId], references: [id])
+  reason     String
+  createdAt  DateTime @default(now())
+
+  @@unique([rideId, reporterId]) // one report per person per ride
+}
