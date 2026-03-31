@@ -100,7 +100,7 @@ export default function LoginPage({ openRides = 12 }: { openRides?: number }) {
       </main>
 
       <footer className="animate-fade-up relative z-10 pb-6 text-center text-[11px] tracking-[0.04em] text-black/25 [animation-delay:550ms]">
-        Made by students, for students
+        Made by students, for students.
       </footer>
     </div>
   );
