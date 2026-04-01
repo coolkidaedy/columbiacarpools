@@ -45,3 +45,12 @@ export const RideStatus = {
 } as const
 
 export type RideStatus = (typeof RideStatus)[keyof typeof RideStatus]
+
+
+export const PreferredCommunication = {
+  EMAIL: 'EMAIL',
+  PHONE: 'PHONE',
+  BOTH: 'BOTH'
+} as const
+
+export type PreferredCommunication = (typeof PreferredCommunication)[keyof typeof PreferredCommunication]

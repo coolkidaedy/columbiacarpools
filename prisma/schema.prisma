@@ -40,6 +40,12 @@ enum RideStatus {
   CANCELLED
 }
 
+enum PreferredCommunication {
+  EMAIL
+  PHONE
+  BOTH
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -49,6 +55,8 @@ model User {
   schoolCustom String? // only set when school == "Other"
   year      String?  // "2025" | "2026" | "2027" | "2028" | "Graduate" | "Other"
   yearCustom String? // only set when year == "Other"
+  phoneNumber String?
+  preferredCommunication PreferredCommunication?
   createdAt DateTime @default(now())
 
   ridesPosted  Ride[]          @relation("PostedBy")

@@ -33,6 +33,8 @@ export type UserMinAggregateOutputType = {
   schoolCustom: string | null
   year: string | null
   yearCustom: string | null
+  phoneNumber: string | null
+  preferredCommunication: $Enums.PreferredCommunication | null
   createdAt: Date | null
 }
 
@@ -45,6 +47,8 @@ export type UserMaxAggregateOutputType = {
   schoolCustom: string | null
   year: string | null
   yearCustom: string | null
+  phoneNumber: string | null
+  preferredCommunication: $Enums.PreferredCommunication | null
   createdAt: Date | null
 }
 
@@ -57,6 +61,8 @@ export type UserCountAggregateOutputType = {
   schoolCustom: number
   year: number
   yearCustom: number
+  phoneNumber: number
+  preferredCommunication: number
   createdAt: number
   _all: number
 }
@@ -71,6 +77,8 @@ export type UserMinAggregateInputType = {
   schoolCustom?: true
   year?: true
   yearCustom?: true
+  phoneNumber?: true
+  preferredCommunication?: true
   createdAt?: true
 }
 
@@ -83,6 +91,8 @@ export type UserMaxAggregateInputType = {
   schoolCustom?: true
   year?: true
   yearCustom?: true
+  phoneNumber?: true
+  preferredCommunication?: true
   createdAt?: true
 }
 
@@ -95,6 +105,8 @@ export type UserCountAggregateInputType = {
   schoolCustom?: true
   year?: true
   yearCustom?: true
+  phoneNumber?: true
+  preferredCommunication?: true
   createdAt?: true
   _all?: true
 }
@@ -180,6 +192,8 @@ export type UserGroupByOutputType = {
   schoolCustom: string | null
   year: string | null
   yearCustom: string | null
+  phoneNumber: string | null
+  preferredCommunication: $Enums.PreferredCommunication | null
   createdAt: Date
   _count: UserCountAggregateOutputType | null
   _min: UserMinAggregateOutputType | null
@@ -213,6 +227,8 @@ export type UserWhereInput = {
   schoolCustom?: Prisma.StringNullableFilter<"User"> | string | null
   year?: Prisma.StringNullableFilter<"User"> | string | null
   yearCustom?: Prisma.StringNullableFilter<"User"> | string | null
+  phoneNumber?: Prisma.StringNullableFilter<"User"> | string | null
+  preferredCommunication?: Prisma.EnumPreferredCommunicationNullableFilter<"User"> | $Enums.PreferredCommunication | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   ridesPosted?: Prisma.RideListRelationFilter
   requests?: Prisma.JoinRequestListRelationFilter
@@ -228,6 +244,8 @@ export type UserOrderByWithRelationInput = {
   schoolCustom?: Prisma.SortOrderInput | Prisma.SortOrder
   year?: Prisma.SortOrderInput | Prisma.SortOrder
   yearCustom?: Prisma.SortOrderInput | Prisma.SortOrder
+  phoneNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  preferredCommunication?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   ridesPosted?: Prisma.RideOrderByRelationAggregateInput
   requests?: Prisma.JoinRequestOrderByRelationAggregateInput
@@ -246,6 +264,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   schoolCustom?: Prisma.StringNullableFilter<"User"> | string | null
   year?: Prisma.StringNullableFilter<"User"> | string | null
   yearCustom?: Prisma.StringNullableFilter<"User"> | string | null
+  phoneNumber?: Prisma.StringNullableFilter<"User"> | string | null
+  preferredCommunication?: Prisma.EnumPreferredCommunicationNullableFilter<"User"> | $Enums.PreferredCommunication | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   ridesPosted?: Prisma.RideListRelationFilter
   requests?: Prisma.JoinRequestListRelationFilter
@@ -261,6 +281,8 @@ export type UserOrderByWithAggregationInput = {
   schoolCustom?: Prisma.SortOrderInput | Prisma.SortOrder
   year?: Prisma.SortOrderInput | Prisma.SortOrder
   yearCustom?: Prisma.SortOrderInput | Prisma.SortOrder
+  phoneNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  preferredCommunication?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
   _max?: Prisma.UserMaxOrderByAggregateInput
@@ -279,6 +301,8 @@ export type UserScalarWhereWithAggregatesInput = {
   schoolCustom?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   year?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   yearCustom?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  phoneNumber?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  preferredCommunication?: Prisma.EnumPreferredCommunicationNullableWithAggregatesFilter<"User"> | $Enums.PreferredCommunication | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
 }
 
@@ -291,6 +315,8 @@ export type UserCreateInput = {
   schoolCustom?: string | null
   year?: string | null
   yearCustom?: string | null
+  phoneNumber?: string | null
+  preferredCommunication?: $Enums.PreferredCommunication | null
   createdAt?: Date | string
   ridesPosted?: Prisma.RideCreateNestedManyWithoutPosterInput
   requests?: Prisma.JoinRequestCreateNestedManyWithoutRequesterInput
@@ -306,6 +332,8 @@ export type UserUncheckedCreateInput = {
   schoolCustom?: string | null
   year?: string | null
   yearCustom?: string | null
+  phoneNumber?: string | null
+  preferredCommunication?: $Enums.PreferredCommunication | null
   createdAt?: Date | string
   ridesPosted?: Prisma.RideUncheckedCreateNestedManyWithoutPosterInput
   requests?: Prisma.JoinRequestUncheckedCreateNestedManyWithoutRequesterInput
@@ -321,6 +349,8 @@ export type UserUpdateInput = {
   schoolCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   yearCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredCommunication?: Prisma.NullableEnumPreferredCommunicationFieldUpdateOperationsInput | $Enums.PreferredCommunication | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ridesPosted?: Prisma.RideUpdateManyWithoutPosterNestedInput
   requests?: Prisma.JoinRequestUpdateManyWithoutRequesterNestedInput
@@ -336,6 +366,8 @@ export type UserUncheckedUpdateInput = {
   schoolCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   yearCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredCommunication?: Prisma.NullableEnumPreferredCommunicationFieldUpdateOperationsInput | $Enums.PreferredCommunication | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ridesPosted?: Prisma.RideUncheckedUpdateManyWithoutPosterNestedInput
   requests?: Prisma.JoinRequestUncheckedUpdateManyWithoutRequesterNestedInput
@@ -351,6 +383,8 @@ export type UserCreateManyInput = {
   schoolCustom?: string | null
   year?: string | null
   yearCustom?: string | null
+  phoneNumber?: string | null
+  preferredCommunication?: $Enums.PreferredCommunication | null
   createdAt?: Date | string
 }
 
@@ -363,6 +397,8 @@ export type UserUpdateManyMutationInput = {
   schoolCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   yearCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredCommunication?: Prisma.NullableEnumPreferredCommunicationFieldUpdateOperationsInput | $Enums.PreferredCommunication | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -375,6 +411,8 @@ export type UserUncheckedUpdateManyInput = {
   schoolCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   yearCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredCommunication?: Prisma.NullableEnumPreferredCommunicationFieldUpdateOperationsInput | $Enums.PreferredCommunication | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -387,6 +425,8 @@ export type UserCountOrderByAggregateInput = {
   schoolCustom?: Prisma.SortOrder
   year?: Prisma.SortOrder
   yearCustom?: Prisma.SortOrder
+  phoneNumber?: Prisma.SortOrder
+  preferredCommunication?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -399,6 +439,8 @@ export type UserMaxOrderByAggregateInput = {
   schoolCustom?: Prisma.SortOrder
   year?: Prisma.SortOrder
   yearCustom?: Prisma.SortOrder
+  phoneNumber?: Prisma.SortOrder
+  preferredCommunication?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -411,6 +453,8 @@ export type UserMinOrderByAggregateInput = {
   schoolCustom?: Prisma.SortOrder
   year?: Prisma.SortOrder
   yearCustom?: Prisma.SortOrder
+  phoneNumber?: Prisma.SortOrder
+  preferredCommunication?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -425,6 +469,10 @@ export type StringFieldUpdateOperationsInput = {
 
 export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
+}
+
+export type NullableEnumPreferredCommunicationFieldUpdateOperationsInput = {
+  set?: $Enums.PreferredCommunication | null
 }
 
 export type DateTimeFieldUpdateOperationsInput = {
@@ -482,6 +530,8 @@ export type UserCreateWithoutRidesPostedInput = {
   schoolCustom?: string | null
   year?: string | null
   yearCustom?: string | null
+  phoneNumber?: string | null
+  preferredCommunication?: $Enums.PreferredCommunication | null
   createdAt?: Date | string
   requests?: Prisma.JoinRequestCreateNestedManyWithoutRequesterInput
   reports?: Prisma.ReportCreateNestedManyWithoutReporterInput
@@ -496,6 +546,8 @@ export type UserUncheckedCreateWithoutRidesPostedInput = {
   schoolCustom?: string | null
   year?: string | null
   yearCustom?: string | null
+  phoneNumber?: string | null
+  preferredCommunication?: $Enums.PreferredCommunication | null
   createdAt?: Date | string
   requests?: Prisma.JoinRequestUncheckedCreateNestedManyWithoutRequesterInput
   reports?: Prisma.ReportUncheckedCreateNestedManyWithoutReporterInput
@@ -526,6 +578,8 @@ export type UserUpdateWithoutRidesPostedInput = {
   schoolCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   yearCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredCommunication?: Prisma.NullableEnumPreferredCommunicationFieldUpdateOperationsInput | $Enums.PreferredCommunication | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   requests?: Prisma.JoinRequestUpdateManyWithoutRequesterNestedInput
   reports?: Prisma.ReportUpdateManyWithoutReporterNestedInput
@@ -540,6 +594,8 @@ export type UserUncheckedUpdateWithoutRidesPostedInput = {
   schoolCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   yearCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredCommunication?: Prisma.NullableEnumPreferredCommunicationFieldUpdateOperationsInput | $Enums.PreferredCommunication | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   requests?: Prisma.JoinRequestUncheckedUpdateManyWithoutRequesterNestedInput
   reports?: Prisma.ReportUncheckedUpdateManyWithoutReporterNestedInput
@@ -554,6 +610,8 @@ export type UserCreateWithoutRequestsInput = {
   schoolCustom?: string | null
   year?: string | null
   yearCustom?: string | null
+  phoneNumber?: string | null
+  preferredCommunication?: $Enums.PreferredCommunication | null
   createdAt?: Date | string
   ridesPosted?: Prisma.RideCreateNestedManyWithoutPosterInput
   reports?: Prisma.ReportCreateNestedManyWithoutReporterInput
@@ -568,6 +626,8 @@ export type UserUncheckedCreateWithoutRequestsInput = {
   schoolCustom?: string | null
   year?: string | null
   yearCustom?: string | null
+  phoneNumber?: string | null
+  preferredCommunication?: $Enums.PreferredCommunication | null
   createdAt?: Date | string
   ridesPosted?: Prisma.RideUncheckedCreateNestedManyWithoutPosterInput
   reports?: Prisma.ReportUncheckedCreateNestedManyWithoutReporterInput
@@ -598,6 +658,8 @@ export type UserUpdateWithoutRequestsInput = {
   schoolCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   yearCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredCommunication?: Prisma.NullableEnumPreferredCommunicationFieldUpdateOperationsInput | $Enums.PreferredCommunication | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ridesPosted?: Prisma.RideUpdateManyWithoutPosterNestedInput
   reports?: Prisma.ReportUpdateManyWithoutReporterNestedInput
@@ -612,6 +674,8 @@ export type UserUncheckedUpdateWithoutRequestsInput = {
   schoolCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   yearCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredCommunication?: Prisma.NullableEnumPreferredCommunicationFieldUpdateOperationsInput | $Enums.PreferredCommunication | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ridesPosted?: Prisma.RideUncheckedUpdateManyWithoutPosterNestedInput
   reports?: Prisma.ReportUncheckedUpdateManyWithoutReporterNestedInput
@@ -626,6 +690,8 @@ export type UserCreateWithoutReportsInput = {
   schoolCustom?: string | null
   year?: string | null
   yearCustom?: string | null
+  phoneNumber?: string | null
+  preferredCommunication?: $Enums.PreferredCommunication | null
   createdAt?: Date | string
   ridesPosted?: Prisma.RideCreateNestedManyWithoutPosterInput
   requests?: Prisma.JoinRequestCreateNestedManyWithoutRequesterInput
@@ -640,6 +706,8 @@ export type UserUncheckedCreateWithoutReportsInput = {
   schoolCustom?: string | null
   year?: string | null
   yearCustom?: string | null
+  phoneNumber?: string | null
+  preferredCommunication?: $Enums.PreferredCommunication | null
   createdAt?: Date | string
   ridesPosted?: Prisma.RideUncheckedCreateNestedManyWithoutPosterInput
   requests?: Prisma.JoinRequestUncheckedCreateNestedManyWithoutRequesterInput
@@ -670,6 +738,8 @@ export type UserUpdateWithoutReportsInput = {
   schoolCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   yearCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredCommunication?: Prisma.NullableEnumPreferredCommunicationFieldUpdateOperationsInput | $Enums.PreferredCommunication | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ridesPosted?: Prisma.RideUpdateManyWithoutPosterNestedInput
   requests?: Prisma.JoinRequestUpdateManyWithoutRequesterNestedInput
@@ -684,6 +754,8 @@ export type UserUncheckedUpdateWithoutReportsInput = {
   schoolCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   year?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   yearCustom?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preferredCommunication?: Prisma.NullableEnumPreferredCommunicationFieldUpdateOperationsInput | $Enums.PreferredCommunication | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ridesPosted?: Prisma.RideUncheckedUpdateManyWithoutPosterNestedInput
   requests?: Prisma.JoinRequestUncheckedUpdateManyWithoutRequesterNestedInput
@@ -747,6 +819,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   schoolCustom?: boolean
   year?: boolean
   yearCustom?: boolean
+  phoneNumber?: boolean
+  preferredCommunication?: boolean
   createdAt?: boolean
   ridesPosted?: boolean | Prisma.User$ridesPostedArgs<ExtArgs>
   requests?: boolean | Prisma.User$requestsArgs<ExtArgs>
@@ -763,6 +837,8 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   schoolCustom?: boolean
   year?: boolean
   yearCustom?: boolean
+  phoneNumber?: boolean
+  preferredCommunication?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["user"]>
 
@@ -775,6 +851,8 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   schoolCustom?: boolean
   year?: boolean
   yearCustom?: boolean
+  phoneNumber?: boolean
+  preferredCommunication?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["user"]>
 
@@ -787,10 +865,12 @@ export type UserSelectScalar = {
   schoolCustom?: boolean
   year?: boolean
   yearCustom?: boolean
+  phoneNumber?: boolean
+  preferredCommunication?: boolean
   createdAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "uni" | "name" | "school" | "schoolCustom" | "year" | "yearCustom" | "createdAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "uni" | "name" | "school" | "schoolCustom" | "year" | "yearCustom" | "phoneNumber" | "preferredCommunication" | "createdAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   ridesPosted?: boolean | Prisma.User$ridesPostedArgs<ExtArgs>
   requests?: boolean | Prisma.User$requestsArgs<ExtArgs>
@@ -816,6 +896,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     schoolCustom: string | null
     year: string | null
     yearCustom: string | null
+    phoneNumber: string | null
+    preferredCommunication: $Enums.PreferredCommunication | null
     createdAt: Date
   }, ExtArgs["result"]["user"]>
   composites: {}
@@ -1251,6 +1333,8 @@ export interface UserFieldRefs {
   readonly schoolCustom: Prisma.FieldRef<"User", 'String'>
   readonly year: Prisma.FieldRef<"User", 'String'>
   readonly yearCustom: Prisma.FieldRef<"User", 'String'>
+  readonly phoneNumber: Prisma.FieldRef<"User", 'String'>
+  readonly preferredCommunication: Prisma.FieldRef<"User", 'PreferredCommunication'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
 }
     

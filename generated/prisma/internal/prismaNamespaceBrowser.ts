@@ -80,6 +80,8 @@ export const UserScalarFieldEnum = {
   schoolCustom: 'schoolCustom',
   year: 'year',
   yearCustom: 'yearCustom',
+  phoneNumber: 'phoneNumber',
+  preferredCommunication: 'preferredCommunication',
   createdAt: 'createdAt'
 } as const
 

@@ -757,6 +757,8 @@ export const UserScalarFieldEnum = {
   schoolCustom: 'schoolCustom',
   year: 'year',
   yearCustom: 'yearCustom',
+  phoneNumber: 'phoneNumber',
+  preferredCommunication: 'preferredCommunication',
   createdAt: 'createdAt'
 } as const
 
@@ -848,6 +850,20 @@ export type StringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 
  * Reference to a field of type 'String[]'
  */
 export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'String[]'>
+    
+
+
+/**
+ * Reference to a field of type 'PreferredCommunication'
+ */
+export type EnumPreferredCommunicationFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PreferredCommunication'>
+    
+
+
+/**
+ * Reference to a field of type 'PreferredCommunication[]'
+ */
+export type ListEnumPreferredCommunicationFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PreferredCommunication[]'>
     
 
 

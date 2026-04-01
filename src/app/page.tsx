@@ -2,6 +2,8 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { groupRidesForDashboard, type RideWithRequestStatuses } from "@/lib/rides-mapper";
+import RidesDashboard from "@/components/RidesDashboard";
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
@@ -13,26 +15,41 @@ export default async function Home() {
   const user = await prisma.user.findUnique({
     where: { email: session.user.email.toLowerCase() },
     select: {
+      id: true,
       name: true,
       school: true,
       year: true,
+      preferredCommunication: true,
     },
   });
 
-  if (!user?.school || !user?.year) {
+  if (!user?.school || !user?.year || !user?.preferredCommunication) {
     redirect("/complete-profile");
   }
 
+  const now = new Date();
+  const yearAhead = new Date(now.getTime() + 365 * 24 * 60 * 60_000);
+  const dbRides = await prisma.ride.findMany({
+    where: {
+      status: "OPEN",
+      departureTime: { gte: now, lte: yearAhead },
+    },
+    include: {
+      requests: { select: { status: true } },
+    },
+    orderBy: { departureTime: "asc" },
+  });
+
+  const initialRideGroups = groupRidesForDashboard(
+    dbRides as RideWithRequestStatuses[],
+    user.id,
+    now
+  );
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-zinc-50 p-6">
-      <section className="w-full max-w-xl rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-          Welcome{user.name ? `, ${user.name}` : ""}!
-        </h1>
-        <p className="mt-3 text-zinc-600">
-          Your profile is complete. You can now access the app.
-        </p>
-      </section>
-    </main>
+    <RidesDashboard
+      userName={user.name ?? session.user.email}
+      initialRideGroups={initialRideGroups}
+    />
   );
 }

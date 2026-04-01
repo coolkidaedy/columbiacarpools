@@ -13,15 +13,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Keep app shell light so auth/marketing pages never show a black void behind transparent layers. */
 body {
-  background: var(--background);
+  background: #f7f4ef;
   color: var(--foreground);
   font-family: "DM Sans", Arial, Helvetica, sans-serif;
 }
