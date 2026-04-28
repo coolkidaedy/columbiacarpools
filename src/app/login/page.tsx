@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { authOptions, isDevEmailSigninConfigured } from "@/lib/auth";
+import { authOptions } from "@/lib/auth";
 import { dashboardRideListUntilUtc } from "@/lib/nyc-datetime";
 import { prisma } from "@/lib/prisma";
 import LoginPageClient from "./LoginPageClient";
@@ -37,7 +37,6 @@ export default async function LoginPage() {
     <LoginPageClient
       csrfToken={csrfToken}
       openRideCount={openRideCount}
-      devLoginEnabled={isDevEmailSigninConfigured()}
     />
   );
 }
