@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
   Configuration: "There is a problem with the server configuration.",
@@ -22,9 +23,11 @@ const fullText = "Columbia Carpools";
 export default function LoginPageClient({
   csrfToken,
   openRideCount,
+  devLoginEnabled = false,
 }: {
   csrfToken: string;
   openRideCount: number;
+  devLoginEnabled?: boolean;
 }) {
   const router = useRouter();
   const [displayedText, setDisplayedText] = useState("");
@@ -129,6 +132,14 @@ export default function LoginPageClient({
           <span className="text-[11px] tracking-[0.03em] text-black/35">
             @columbia.edu and @barnard.edu only
           </span>
+          {devLoginEnabled ? (
+            <Link
+              href="/dev/login"
+              className="text-[11px] text-black/40 underline-offset-2 hover:text-[#4A7FD4] hover:underline"
+            >
+              Dev sign-in (env email)
+            </Link>
+          ) : null}
         </div>
 
         <p className="animate-fade-up mt-12 text-sm tracking-[0.02em] text-black/45 [animation-delay:450ms]">

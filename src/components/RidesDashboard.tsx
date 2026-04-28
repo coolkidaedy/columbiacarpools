@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { maxBookingYmdNyc, todayYmdNyc } from "@/lib/nyc-datetime";
+import { signOut } from "next-auth/react";
+import { defaultDepartureSlotNyc, maxBookingYmdNyc, todayYmdNyc } from "@/lib/nyc-datetime";
 import type { Airport, GenderPref, RideGroup, RideListItem } from "@/types/rides";
 
 const SPOT_DOT_CAP = 36;
+const AUTO_REFRESH_MS = 20_000;
 
 const AIRPORT_STYLES: Record<Airport, string> = {
   JFK: "bg-[#1a1a1a] text-[#F7F4EF]",
@@ -55,16 +57,29 @@ function SpotDots({ total, filled }: { total: number; filled: number }) {
 
 function RideCard({
   ride,
-  requested,
+  joinBusy,
+  leaveBusy,
+  joinStatus,
   onRequest,
+  onLeave,
   onEdit,
   onDelete,
+  onManageRequests,
+  showManageRequests,
+  showJoinActions,
 }: {
   ride: RideListItem;
-  requested?: boolean;
-  onRequest?: (id: string) => void;
+  joinBusy?: boolean;
+  leaveBusy?: boolean;
+  /** Your request for this ride, if any */
+  joinStatus?: "PENDING" | "ACCEPTED";
+  onRequest?: (id: string) => void | Promise<void>;
+  onLeave?: (id: string) => void | Promise<void>;
   onEdit?: (ride: RideListItem) => void;
   onDelete?: (ride: RideListItem) => void;
+  onManageRequests?: (ride: RideListItem) => void;
+  showManageRequests?: boolean;
+  showJoinActions?: boolean;
 }) {
   const genderLabel = GENDER_LABEL[ride.genderPref];
 
@@ -121,6 +136,15 @@ function RideCard({
                 Your ride
               </span>
               <div className="flex gap-2">
+                {showManageRequests ? (
+                  <button
+                    type="button"
+                    onClick={() => onManageRequests?.(ride)}
+                    className="w-full rounded-full border border-[#4A7FD4]/30 bg-[#EEF4FF] px-4 py-2 text-[12px] font-medium text-[#2f5ea6] sm:w-auto"
+                  >
+                    Manage requests
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => onEdit?.(ride)}
@@ -145,18 +169,42 @@ function RideCard({
           </>
         ) : (
           <>
-            <button
-              type="button"
-              disabled={requested}
-              onClick={() => onRequest?.(ride.id)}
-              className={`w-full rounded-full border-[1.5px] px-5 py-2.5 text-[13px] font-medium transition-all duration-150 sm:w-auto sm:py-2 ${
-                requested
-                  ? "cursor-default border-black/10 bg-zinc-100 text-[#888]"
-                  : "border-[#1a1a1a] bg-transparent text-[#1a1a1a] active:bg-[#1a1a1a] active:text-[#F7F4EF] sm:hover:bg-[#1a1a1a] sm:hover:text-[#F7F4EF]"
-              }`}
-            >
-              {requested ? "Requested" : "Request to join"}
-            </button>
+            {!showJoinActions ? (
+              <button
+                type="button"
+                disabled
+                className="w-full cursor-default rounded-full border-[1.5px] border-black/10 bg-zinc-100 px-5 py-2.5 text-[13px] font-medium text-[#888] sm:w-auto sm:py-2"
+              >
+                Loading...
+              </button>
+            ) : joinStatus === "ACCEPTED" ? (
+              <div className="flex w-full gap-2 sm:w-auto">
+                <span className="w-full cursor-default rounded-full border-[1.5px] border-black/10 bg-zinc-100 px-5 py-2.5 text-center text-[13px] font-medium text-[#888] sm:w-auto sm:py-2">
+                  You're in
+                </span>
+                <button
+                  type="button"
+                  disabled={leaveBusy}
+                  onClick={() => void onLeave?.(ride.id)}
+                  className="w-full rounded-full border border-red-200 bg-red-50 px-4 py-2 text-[12px] font-medium text-red-700 disabled:opacity-60 sm:w-auto"
+                >
+                  {leaveBusy ? "Leaving..." : "Leave ride"}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled={Boolean(joinStatus) || joinBusy}
+                onClick={() => void onRequest?.(ride.id)}
+                className={`w-full rounded-full border-[1.5px] px-5 py-2.5 text-[13px] font-medium transition-all duration-150 sm:w-auto sm:py-2 ${
+                  joinStatus || joinBusy
+                    ? "cursor-default border-black/10 bg-zinc-100 text-[#888]"
+                    : "border-[#1a1a1a] bg-transparent text-[#1a1a1a] active:bg-[#1a1a1a] active:text-[#F7F4EF] sm:hover:bg-[#1a1a1a] sm:hover:text-[#F7F4EF]"
+                }`}
+              >
+                {joinBusy ? "Sending…" : joinStatus === "PENDING" ? "Requested" : "Request to join"}
+              </button>
+            )}
             <span className="text-center text-[11px] text-[#aaa] sm:text-right">{ride.timeAway}</span>
           </>
         )}
@@ -172,6 +220,14 @@ type PostRideFormState = {
   time: string;
   totalSpots: number;
   genderPref: GenderPref;
+};
+
+type PendingRideRequest = {
+  id: string;
+  requesterFirstName: string;
+  requesterEmail: string;
+  message: string | null;
+  createdAt: string;
 };
 
 export type PostRidePayload = Pick<
@@ -194,15 +250,18 @@ function PostRideModal({
   initialValue?: Partial<PostRideFormState>;
   submitLabel?: string;
 }) {
-  const [form, setForm] = useState<PostRideFormState>(() => ({
-    airport: "JFK",
-    terminal: "",
-    departureDate: todayYmdNyc(),
-    time: "14:30",
-    totalSpots: 3,
-    genderPref: "NONE",
-    ...initialValue,
-  }));
+  const [form, setForm] = useState<PostRideFormState>(() => {
+    const slot = defaultDepartureSlotNyc();
+    return {
+      airport: "JFK",
+      terminal: "",
+      departureDate: slot.ymd,
+      time: slot.time,
+      totalSpots: 3,
+      genderPref: "NONE",
+      ...initialValue,
+    };
+  });
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -396,26 +455,147 @@ function PostRideModal({
   );
 }
 
+function ManageRequestsModal({
+  ride,
+  open,
+  requests,
+  busyRequestId,
+  error,
+  onClose,
+  onAction,
+}: {
+  ride: RideListItem | null;
+  open: boolean;
+  requests: PendingRideRequest[];
+  busyRequestId: string | null;
+  error: string | null;
+  onClose: () => void;
+  onAction: (requestId: string, action: "accept" | "decline") => void | Promise<void>;
+}) {
+  if (!open || !ride) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
+      <button
+        type="button"
+        aria-label="Close"
+        className="absolute inset-0 bg-black/35 backdrop-blur-[2px]"
+        onClick={onClose}
+      />
+      <div className="relative z-10 max-h-[80dvh] w-full max-w-xl overflow-y-auto rounded-t-2xl border border-black/10 border-b-0 bg-[#F7F4EF] p-4 sm:rounded-2xl sm:border-b sm:p-6">
+        <h2 className="font-serif text-xl font-semibold text-[#1a1a1a]">Manage requests</h2>
+        <p className="mt-1 text-[13px] text-[#888]">
+          {ride.airport} · {ride.departureTime}
+        </p>
+        {error ? (
+          <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-800">{error}</p>
+        ) : null}
+        <div className="mt-4 flex flex-col gap-3">
+          {requests.length === 0 ? (
+            <p className="rounded-xl border border-black/10 bg-white px-3 py-4 text-[13px] text-[#666]">
+              No pending requests right now.
+            </p>
+          ) : null}
+          {requests.map((req) => (
+            <div key={req.id} className="rounded-xl border border-black/10 bg-white p-3">
+              <p className="text-[13px] font-semibold text-[#1a1a1a]">{req.requesterFirstName}</p>
+              <p className="mt-1 text-[12px] text-[#777]">{new Date(req.createdAt).toLocaleString()}</p>
+              {req.message ? <p className="mt-2 text-[13px] text-[#444]">"{req.message}"</p> : null}
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  disabled={busyRequestId === req.id}
+                  onClick={() => void onAction(req.id, "accept")}
+                  className="rounded-full bg-[#1a1a1a] px-4 py-2 text-[12px] font-medium text-[#F7F4EF] disabled:opacity-60"
+                >
+                  {busyRequestId === req.id ? "Working..." : "Accept"}
+                </button>
+                <button
+                  type="button"
+                  disabled={busyRequestId === req.id}
+                  onClick={() => void onAction(req.id, "decline")}
+                  className="rounded-full border border-black/15 bg-white px-4 py-2 text-[12px] font-medium text-[#555] disabled:opacity-60"
+                >
+                  Decline
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function RidesDashboard({
   userName,
   initialRideGroups,
+  initialJoinRequests = [],
 }: {
   userName?: string | null;
   initialRideGroups: RideGroup[];
+  initialJoinRequests?: { rideId: string; status: "PENDING" | "ACCEPTED" }[];
 }) {
   const router = useRouter();
   const [rideGroups, setRideGroups] = useState(initialRideGroups);
-  const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
+  const [joinStatusByRideId, setJoinStatusByRideId] = useState<Record<string, "PENDING" | "ACCEPTED">>(() =>
+    Object.fromEntries(initialJoinRequests.map((j) => [j.rideId, j.status]))
+  );
+  const [joinBusyRideId, setJoinBusyRideId] = useState<string | null>(null);
+  const [leaveBusyRideId, setLeaveBusyRideId] = useState<string | null>(null);
+  const [joinMessage, setJoinMessage] = useState<{ type: "error"; text: string } | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterOption>("All airports");
   const [postOpen, setPostOpen] = useState(false);
   const [postModalKey, setPostModalKey] = useState(0);
   const [postError, setPostError] = useState<string | null>(null);
   const [editingRide, setEditingRide] = useState<RideListItem | null>(null);
   const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null);
+  const [managingRide, setManagingRide] = useState<RideListItem | null>(null);
+  const [pendingRequests, setPendingRequests] = useState<PendingRideRequest[]>([]);
+  const [requestsError, setRequestsError] = useState<string | null>(null);
+  const [requestsBusyId, setRequestsBusyId] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setRideGroups(initialRideGroups);
   }, [initialRideGroups]);
+
+  useEffect(() => {
+    setJoinStatusByRideId(Object.fromEntries(initialJoinRequests.map((j) => [j.rideId, j.status])));
+  }, [initialJoinRequests]);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const reloadRidesFromApi = useCallback(async () => {
+    try {
+      const res = await fetch("/api/rides", { cache: "no-store" });
+      if (!res.ok) return;
+      const j = (await res.json()) as { groups?: unknown };
+      if (Array.isArray(j.groups)) {
+        setRideGroups(j.groups as RideGroup[]);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === "visible") void reloadRidesFromApi();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [reloadRidesFromApi]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void reloadRidesFromApi();
+      }
+    }, AUTO_REFRESH_MS);
+    return () => window.clearInterval(intervalId);
+  }, [reloadRidesFromApi]);
 
   const filters: FilterOption[] = ["All airports", "JFK", "LGA", "EWR"];
 
@@ -438,9 +618,53 @@ export default function RidesDashboard({
     [rideGroups]
   );
 
-  const handleRequest = useCallback((id: string) => {
-    setRequestedIds((prev) => new Set(prev).add(id));
+  const handleRequest = useCallback(async (rideId: string) => {
+    setJoinMessage(null);
+    setJoinBusyRideId(rideId);
+    try {
+      const res = await fetch(`/api/rides/${rideId}/join`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        setJoinMessage({ type: "error", text: typeof j.error === "string" ? j.error : "Could not send request" });
+        return;
+      }
+      setJoinStatusByRideId((prev) => ({ ...prev, [rideId]: "PENDING" }));
+    } catch {
+      setJoinMessage({ type: "error", text: "Network error" });
+    } finally {
+      setJoinBusyRideId(null);
+    }
   }, []);
+
+  const handleLeaveRide = useCallback(async (rideId: string) => {
+    const ok = window.confirm("Leave this ride?");
+    if (!ok) return;
+    setJoinMessage(null);
+    setLeaveBusyRideId(rideId);
+    try {
+      const res = await fetch(`/api/rides/${rideId}/join`, { method: "DELETE" });
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        setJoinMessage({ type: "error", text: typeof j.error === "string" ? j.error : "Could not leave ride" });
+        return;
+      }
+      setJoinStatusByRideId((prev) => {
+        const next = { ...prev };
+        delete next[rideId];
+        return next;
+      });
+      await reloadRidesFromApi();
+      router.refresh();
+    } catch {
+      setJoinMessage({ type: "error", text: "Network error" });
+    } finally {
+      setLeaveBusyRideId(null);
+    }
+  }, [reloadRidesFromApi, router]);
 
   const handlePostRide = useCallback(async (payload: PostRidePayload) => {
     setPostError(null);
@@ -455,13 +679,14 @@ export default function RidesDashboard({
         setPostError(typeof j.error === "string" ? j.error : "Could not post ride");
         return false;
       }
+      await reloadRidesFromApi();
       router.refresh();
       return true;
     } catch {
       setPostError("Network error");
       return false;
     }
-  }, [router]);
+  }, [reloadRidesFromApi, router]);
 
   const handleEditRide = useCallback(
     async (payload: PostRidePayload) => {
@@ -479,6 +704,7 @@ export default function RidesDashboard({
           return false;
         }
         setEditingRide(null);
+        await reloadRidesFromApi();
         router.refresh();
         return true;
       } catch {
@@ -486,7 +712,7 @@ export default function RidesDashboard({
         return false;
       }
     },
-    [editingRide, router]
+    [editingRide, reloadRidesFromApi, router]
   );
 
   const handleDeleteRide = useCallback(
@@ -497,15 +723,68 @@ export default function RidesDashboard({
       try {
         const res = await fetch(`/api/rides/${ride.id}`, { method: "DELETE" });
         if (!res.ok) {
-          setPostError("Could not delete ride");
+          const j = (await res.json().catch(() => ({}))) as { error?: string };
+          setJoinMessage({
+            type: "error",
+            text: typeof j.error === "string" ? j.error : "Could not delete ride",
+          });
           return;
         }
+        await reloadRidesFromApi();
         router.refresh();
+      } catch {
+        setJoinMessage({ type: "error", text: "Network error" });
       } finally {
         setDeleteBusyId(null);
       }
     },
-    [router]
+    [reloadRidesFromApi, router]
+  );
+
+  const openManageRequests = useCallback(async (ride: RideListItem) => {
+    setManagingRide(ride);
+    setRequestsError(null);
+    setPendingRequests([]);
+    try {
+      const res = await fetch(`/api/rides/${ride.id}/requests`, { cache: "no-store" });
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        setRequestsError(typeof j.error === "string" ? j.error : "Could not load requests");
+        return;
+      }
+      const j = (await res.json()) as { requests?: PendingRideRequest[] };
+      setPendingRequests(Array.isArray(j.requests) ? j.requests : []);
+    } catch {
+      setRequestsError("Network error");
+    }
+  }, []);
+
+  const handleManageAction = useCallback(
+    async (requestId: string, action: "accept" | "decline") => {
+      if (!managingRide) return;
+      setRequestsBusyId(requestId);
+      setRequestsError(null);
+      try {
+        const res = await fetch(`/api/rides/${managingRide.id}/requests/${requestId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action }),
+        });
+        if (!res.ok) {
+          const j = (await res.json().catch(() => ({}))) as { error?: string };
+          setRequestsError(typeof j.error === "string" ? j.error : "Could not update request");
+          return;
+        }
+        setPendingRequests((prev) => prev.filter((r) => r.id !== requestId));
+        await reloadRidesFromApi();
+        router.refresh();
+      } catch {
+        setRequestsError("Network error");
+      } finally {
+        setRequestsBusyId(null);
+      }
+    },
+    [managingRide, reloadRidesFromApi, router]
   );
 
   const initials = (userName ?? "CU")
@@ -547,6 +826,15 @@ export default function RidesDashboard({
         }
         submitLabel="Save changes"
       />
+      <ManageRequestsModal
+        ride={managingRide}
+        open={Boolean(managingRide)}
+        requests={pendingRequests}
+        busyRequestId={requestsBusyId}
+        error={requestsError}
+        onClose={() => setManagingRide(null)}
+        onAction={handleManageAction}
+      />
 
       <div
         className="pointer-events-none absolute -right-24 -top-24 h-[400px] w-[400px] rounded-full opacity-40"
@@ -557,16 +845,33 @@ export default function RidesDashboard({
         style={{ background: "radial-gradient(circle, #D4EAC8 0%, transparent 70%)" }}
       />
 
-      <nav className="animate-fade-down relative z-10 flex items-center justify-between border-b border-black/[0.07] bg-[rgba(247,244,239,0.85)] px-8 py-5 backdrop-blur-md">
+      <nav className="animate-fade-down relative z-10 flex items-center justify-between gap-4 border-b border-black/[0.07] bg-[rgba(247,244,239,0.85)] px-4 py-5 backdrop-blur-md sm:px-8">
         <span className="text-[13px] font-medium uppercase tracking-[0.12em] text-black/50">
           Columbia Carpools
         </span>
-        <div className="flex h-8 w-8 cursor-default items-center justify-center rounded-full bg-[#1a1a1a] text-[12px] font-medium text-[#F7F4EF]">
-          {initials || "CU"}
+        <div className="flex shrink-0 items-center gap-3">
+          <button
+            type="button"
+            onClick={() => void signOut({ callbackUrl: "/login" })}
+            className="touch-manipulation rounded-full border border-black/[0.12] bg-white px-3 py-1.5 text-[12px] font-medium text-[#444] transition-colors hover:border-[#4A7FD4]/50 hover:text-[#1a1a1a]"
+          >
+            Log out
+          </button>
+          <div className="flex h-8 w-8 cursor-default items-center justify-center rounded-full bg-[#1a1a1a] text-[12px] font-medium text-[#F7F4EF]">
+            {initials || "CU"}
+          </div>
         </div>
       </nav>
 
       <main className="relative z-10 mx-auto w-full max-w-[900px] flex-1 px-4 py-6 pb-10 sm:px-6 sm:py-8 lg:px-8">
+        {joinMessage?.type === "error" ? (
+          <p
+            className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-800"
+            role="alert"
+          >
+            {joinMessage.text}
+          </p>
+        ) : null}
         <div className="animate-fade-up mb-6 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
           <div className="min-w-0">
             <h1 className="font-serif text-[1.65rem] font-semibold leading-[1.12] tracking-[-0.02em] text-[#1a1a1a] sm:text-[32px] sm:leading-[1.1]">
@@ -628,13 +933,19 @@ export default function RidesDashboard({
                   <RideCard
                     key={ride.id}
                     ride={ride}
-                    requested={requestedIds.has(ride.id)}
+                    joinStatus={joinStatusByRideId[ride.id]}
+                    joinBusy={joinBusyRideId === ride.id}
+                    leaveBusy={leaveBusyRideId === ride.id}
                     onRequest={handleRequest}
+                    onLeave={handleLeaveRide}
                     onEdit={(r) => {
                       setPostError(null);
                       setEditingRide(r);
                     }}
                     onDelete={deleteBusyId ? undefined : handleDeleteRide}
+                    onManageRequests={openManageRequests}
+                    showManageRequests={isMounted}
+                    showJoinActions={isMounted}
                   />
                 ))}
               </div>

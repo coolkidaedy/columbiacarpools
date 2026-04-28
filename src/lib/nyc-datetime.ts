@@ -68,6 +68,42 @@ export function maxBookingYmdNyc(refNow: Date = new Date(), daysAhead: number = 
   return nycYmd(new Date(refNow.getTime() + daysAhead * 24 * 60 * 60_000));
 }
 
+/** Last NYC wall minute of `ymd` (YYYY-MM-DD), as a UTC instant. */
+export function endOfNycCalendarDayUtc(ymd: string): Date {
+  return utcFromNycWallClock(ymd, 23, 59);
+}
+
+/**
+ * Match list queries to the latest calendar day we allow in the booking form.
+ * (Plain "now + 365d" can cut off the evening of that last day.)
+ */
+export function dashboardRideListUntilUtc(refNow: Date = new Date()): Date {
+  return endOfNycCalendarDayUtc(maxBookingYmdNyc(refNow));
+}
+
+/** True if departure is still upcoming (NYC intent), with small clock slack. */
+export function isDepartureInFuture(departureUtc: Date, refNow: Date = new Date(), slackMs = 60_000): boolean {
+  return departureUtc.getTime() >= refNow.getTime() - slackMs;
+}
+
+/** Default "Leaving campus" prefill: ~90 minutes from now in NYC. */
+export function defaultDepartureSlotNyc(refNow: Date = new Date()): { ymd: string; time: string } {
+  const d = new Date(refNow.getTime() + 90 * 60_000);
+  const ymd = nycYmd(d);
+  const p = new Intl.DateTimeFormat("en-US", {
+    timeZone: NYC,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(d);
+  const hour = Number(p.find((x) => x.type === "hour")?.value ?? 12);
+  const minute = Number(p.find((x) => x.type === "minute")?.value ?? 0);
+  return {
+    ymd,
+    time: `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`,
+  };
+}
+
 export function formatTime12hNyc(d: Date): string {
   return new Intl.DateTimeFormat("en-US", {
     timeZone: NYC,

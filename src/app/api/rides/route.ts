@@ -2,9 +2,17 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { groupRidesForDashboard, type RideWithRequestStatuses } from "@/lib/rides-mapper";
-import { maxBookingYmdNyc, todayYmdNyc, utcFromNycWallClock } from "@/lib/nyc-datetime";
+import {
+  dashboardRideListUntilUtc,
+  isDepartureInFuture,
+  maxBookingYmdNyc,
+  todayYmdNyc,
+  utcFromNycWallClock,
+} from "@/lib/nyc-datetime";
 import { prisma } from "@/lib/prisma";
 import type { Airport, GenderPref } from "@/types/rides";
+
+export const dynamic = "force-dynamic";
 
 const AIRPORTS = new Set<Airport>(["JFK", "LGA", "EWR"]);
 const GENDER_PREFS = new Set<GenderPref>(["NONE", "WOMEN_ONLY", "MEN_ONLY"]);
@@ -26,12 +34,12 @@ export async function GET() {
   }
 
   const now = new Date();
-  const yearAhead = new Date(now.getTime() + 365 * 24 * 60 * 60_000);
+  const listUntil = dashboardRideListUntilUtc(now);
 
   const rides = await prisma.ride.findMany({
     where: {
       status: "OPEN",
-      departureTime: { gte: now, lte: yearAhead },
+      departureTime: { gte: now, lte: listUntil },
     },
     include: {
       requests: { select: { status: true } },
@@ -112,6 +120,12 @@ export async function POST(request: Request) {
   }
 
   const departureTime = utcFromNycWallClock(departureDate, th, tm);
+  if (!isDepartureInFuture(departureTime, new Date())) {
+    return NextResponse.json(
+      { error: "That departure time has already passed (Eastern Time). Choose a later date or time." },
+      { status: 400 }
+    );
+  }
   const term = terminal.trim();
 
   const ride = await prisma.ride.create({

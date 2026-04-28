@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { maxBookingYmdNyc, todayYmdNyc, utcFromNycWallClock } from "@/lib/nyc-datetime";
+import { isDepartureInFuture, maxBookingYmdNyc, todayYmdNyc, utcFromNycWallClock } from "@/lib/nyc-datetime";
+import { sendRideDeletedEmail } from "@/lib/email/join-notifications";
 import { prisma } from "@/lib/prisma";
 import type { Airport, GenderPref } from "@/types/rides";
 
@@ -61,9 +62,16 @@ function validateRideInput(o: Record<string, unknown>) {
   };
 }
 
-async function requireOwnedRide(id: string, userId: string) {
+async function requireOwnedOpenRide(id: string, userId: string) {
   return prisma.ride.findFirst({
     where: { id, posterId: userId, status: "OPEN" },
+    select: { id: true },
+  });
+}
+
+async function requireOwnedRide(id: string, userId: string) {
+  return prisma.ride.findFirst({
+    where: { id, posterId: userId },
     select: { id: true },
   });
 }
@@ -72,7 +80,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   const user = await requireUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await context.params;
-  const owned = await requireOwnedRide(id, user.id);
+  const owned = await requireOwnedOpenRide(id, user.id);
   if (!owned) return NextResponse.json({ error: "Ride not found" }, { status: 404 });
 
   let body: unknown;
@@ -87,6 +95,12 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
   const parsed = validateRideInput(body as Record<string, unknown>);
   if (!parsed) return NextResponse.json({ error: "Invalid ride payload" }, { status: 400 });
+  if (!isDepartureInFuture(parsed.departureTime, new Date())) {
+    return NextResponse.json(
+      { error: "That departure time has already passed (Eastern Time). Choose a later date or time." },
+      { status: 400 }
+    );
+  }
 
   await prisma.ride.update({
     where: { id },
@@ -106,9 +120,38 @@ export async function DELETE(_request: Request, context: { params: Promise<{ id:
   const user = await requireUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await context.params;
-  const owned = await requireOwnedRide(id, user.id);
+  const owned = await prisma.ride.findFirst({
+    where: { id, posterId: user.id },
+    select: {
+      id: true,
+      airport: true,
+      departureTime: true,
+      requests: {
+        where: { status: "ACCEPTED" },
+        select: {
+          requester: { select: { email: true, name: true } },
+        },
+      },
+    },
+  });
   if (!owned) return NextResponse.json({ error: "Ride not found" }, { status: 404 });
 
-  await prisma.ride.delete({ where: { id } });
+  await prisma.$transaction(async (tx) => {
+    await tx.report.deleteMany({ where: { rideId: id } });
+    await tx.joinRequest.deleteMany({ where: { rideId: id } });
+    await tx.ride.delete({ where: { id } });
+  });
+
+  await Promise.all(
+    owned.requests.map(async (request) => {
+      await sendRideDeletedEmail({
+        riderEmail: request.requester.email,
+        riderName: request.requester.name,
+        airport: owned.airport,
+        departure: owned.departureTime,
+      });
+    })
+  );
+
   return NextResponse.json({ ok: true });
 }

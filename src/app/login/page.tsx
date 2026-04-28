@@ -1,7 +1,8 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { authOptions } from "@/lib/auth";
+import { authOptions, isDevEmailSigninConfigured } from "@/lib/auth";
+import { dashboardRideListUntilUtc } from "@/lib/nyc-datetime";
 import { prisma } from "@/lib/prisma";
 import LoginPageClient from "./LoginPageClient";
 
@@ -24,13 +25,19 @@ export default async function LoginPage() {
   const csrfToken = await getCsrfToken();
 
   const now = new Date();
-  const yearAhead = new Date(now.getTime() + 365 * 24 * 60 * 60_000);
+  const listUntil = dashboardRideListUntilUtc(now);
   const openRideCount = await prisma.ride.count({
     where: {
       status: "OPEN",
-      departureTime: { gte: now, lte: yearAhead },
+      departureTime: { gte: now, lte: listUntil },
     },
   });
 
-  return <LoginPageClient csrfToken={csrfToken} openRideCount={openRideCount} />;
+  return (
+    <LoginPageClient
+      csrfToken={csrfToken}
+      openRideCount={openRideCount}
+      devLoginEnabled={isDevEmailSigninConfigured()}
+    />
+  );
 }
