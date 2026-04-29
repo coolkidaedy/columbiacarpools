@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
   Configuration: "There is a problem with the server configuration.",
@@ -141,7 +142,14 @@ export default function LoginPageClient({
       </main>
 
       <footer className="animate-fade-up relative z-10 pb-6 text-center text-[11px] tracking-[0.04em] text-black/25 [animation-delay:550ms]">
-        Made by students, for students.
+        Made by students, for students.{" "}
+        <Link href="/privacy-policy" className="underline-offset-2 hover:underline">
+          Privacy Policy
+        </Link>{" "}
+        ·{" "}
+        <Link href="/terms-of-service" className="underline-offset-2 hover:underline">
+          Terms of Service
+        </Link>
       </footer>
     </div>
   );

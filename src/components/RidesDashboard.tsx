@@ -206,6 +206,9 @@ function RideCard({
               </button>
             )}
             <span className="text-center text-[11px] text-[#aaa] sm:text-right">{ride.timeAway}</span>
+            <span className="text-center text-[11px] text-[#888] sm:max-w-[260px] sm:text-right">
+              Please check junk folder and allow <strong>rides@columbiacarpools.com</strong>.
+            </span>
           </>
         )}
       </div>
@@ -315,7 +318,12 @@ function PostRideModal({
         <h2 id="post-ride-title" className="font-serif text-xl font-semibold text-[#1a1a1a]">
           {submitLabel === "Save changes" ? "Edit ride" : "Post a ride"}
         </h2>
-        <p className="mt-1 text-[13px] text-[#888]">Share your airport trip with other students. When others request to join, you will be notified via email</p>
+        <p className="mt-1 text-[13px] text-[#888]">
+          Share your airport trip with other students. When others request to join, you will be notified via email.
+        </p>
+        <p className="mt-2 text-[12px] text-[#777]">
+          Please check your junk folder and allow emails from <strong>rides@columbiacarpools.com</strong>.
+        </p>
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           {error ? (
