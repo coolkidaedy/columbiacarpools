@@ -1,4 +1,4 @@
-import type { JoinRequest, Ride } from "../../generated/prisma/client";
+import type { JoinRequest, Ride } from "@prisma/client";
 import {
   formatTime12hNyc,
   formatTime24hNyc,
