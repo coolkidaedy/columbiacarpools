@@ -5,6 +5,13 @@ import { prisma } from "@/lib/prisma";
 const clientId = process.env.CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
 const nextAuthSecret = process.env.NEXTAUTH_SECRET;
+const ALLOWED_EMAIL_DOMAIN_SUFFIXES = ["columbia.edu", "barnard.edu"] as const;
+
+function isAllowedAcademicDomain(domain: string): boolean {
+  return ALLOWED_EMAIL_DOMAIN_SUFFIXES.some(
+    (suffix) => domain === suffix || domain.endsWith(`.${suffix}`)
+  );
+}
 
 if (!clientId || !clientSecret || !nextAuthSecret) {
   throw new Error("Missing auth environment variables.");
@@ -26,6 +33,10 @@ export const authOptions: NextAuthOptions = {
       if (!user?.email) return false;
 
       const email = user.email.toLowerCase();
+      const domain = email.split("@")[1] ?? "";
+      if (!isAllowedAcademicDomain(domain)) {
+        return false;
+      }
       const uni = email.split("@")[0];
 
       await prisma.user.upsert({
