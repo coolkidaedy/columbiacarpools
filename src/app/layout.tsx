@@ -17,9 +17,12 @@ export const metadata: Metadata = {
   title: "Columbia Carpools",
   description: "Find and share airport carpools with Columbia and Barnard students.",
   icons: {
-    icon: "/columbia-carpools-logo.png",
-    shortcut: "/columbia-carpools-logo.png",
-    apple: "/columbia-carpools-logo.png",
+    icon: [
+      { url: "/favicon.ico?v=3" },
+      { url: "/columbia-carpools-logo.png?v=3", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico?v=3",
+    apple: "/columbia-carpools-logo.png?v=3",
   },
 };
 
