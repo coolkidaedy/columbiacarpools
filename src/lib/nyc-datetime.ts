@@ -125,7 +125,24 @@ export function formatTime24hNyc(d: Date): string {
 function formatShortMonthDayFromYmd(ymd: string): string {
   const [y, m, d] = ymd.split("-").map(Number);
   const utcNoon = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(utcNoon);
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: NYC,
+    month: "short",
+    day: "numeric",
+  }).format(utcNoon);
+}
+
+/** "Wed, May 6" for a NYC calendar date (YYYY-MM-DD from `nycYmd`). */
+export function formatWeekdayMonthDayFromNycYmd(ymd: string): string {
+  const [y, m, d] = ymd.split("-").map(Number);
+  if ([y, m, d].some((part) => Number.isNaN(part))) return ymd;
+  const utcNoon = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: NYC,
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(utcNoon);
 }
 
 export function rideGroupLabel(ymd: string, today: string, tomorrow: string): string {

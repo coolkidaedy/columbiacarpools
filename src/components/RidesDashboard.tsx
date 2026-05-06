@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { defaultDepartureSlotNyc, maxBookingYmdNyc, todayYmdNyc } from "@/lib/nyc-datetime";
+import {
+  defaultDepartureSlotNyc,
+  formatWeekdayMonthDayFromNycYmd,
+  maxBookingYmdNyc,
+  todayYmdNyc,
+} from "@/lib/nyc-datetime";
 import type { Airport, GenderPref, RideGroup, RideListItem } from "@/types/rides";
 
 const SPOT_DOT_CAP = 36;
@@ -22,17 +27,6 @@ const GENDER_LABEL: Record<GenderPref, string | null> = {
 };
 
 type FilterOption = "All airports" | Airport;
-
-function formatDepartureDateLabel(ymd: string): string {
-  const [y, m, d] = ymd.split("-").map((part) => parseInt(part, 10));
-  if ([y, m, d].some((part) => Number.isNaN(part))) return ymd;
-  const date = new Date(Date.UTC(y, m - 1, d));
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  }).format(date);
-}
 
 function SpotDots({ total, filled }: { total: number; filled: number }) {
   const spotsLeft = total - filled;
@@ -93,7 +87,7 @@ function RideCard({
   showJoinActions?: boolean;
 }) {
   const genderLabel = GENDER_LABEL[ride.genderPref];
-  const departureDateLabel = formatDepartureDateLabel(ride.departureDate);
+  const departureDateLabel = formatWeekdayMonthDayFromNycYmd(ride.departureDate);
 
   return (
     <div
