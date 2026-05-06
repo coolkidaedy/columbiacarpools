@@ -23,6 +23,17 @@ const GENDER_LABEL: Record<GenderPref, string | null> = {
 
 type FilterOption = "All airports" | Airport;
 
+function formatDepartureDateLabel(ymd: string): string {
+  const [y, m, d] = ymd.split("-").map((part) => parseInt(part, 10));
+  if ([y, m, d].some((part) => Number.isNaN(part))) return ymd;
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(date);
+}
+
 function SpotDots({ total, filled }: { total: number; filled: number }) {
   const spotsLeft = total - filled;
   if (total > SPOT_DOT_CAP) {
@@ -82,6 +93,7 @@ function RideCard({
   showJoinActions?: boolean;
 }) {
   const genderLabel = GENDER_LABEL[ride.genderPref];
+  const departureDateLabel = formatDepartureDateLabel(ride.departureDate);
 
   return (
     <div
@@ -110,9 +122,14 @@ function RideCard({
 
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#aaa]">
-              Leaving campus
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#aaa]">
+                Leaving campus
+              </span>
+              <span className="rounded-md border border-[#4A7FD4]/35 bg-[#EEF4FF] px-2 py-0.5 text-[11px] font-semibold tracking-[0.01em] text-[#2F5EA6]">
+                {departureDateLabel}
+              </span>
+            </div>
             <span className="text-[13px] text-[#1a1a1a]">{ride.departureTime}</span>
           </div>
           <div className="flex flex-col gap-0.5">

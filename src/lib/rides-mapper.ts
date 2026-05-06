@@ -39,7 +39,7 @@ export function mapRideToListItem(
     departureTime24: formatTime24hNyc(departure),
     departureTime: formatTime12hNyc(departure),
     totalSpots: ride.maxRiders,
-    filledSpots: accepted,
+    filledSpots: Math.min(ride.maxRiders, accepted + 1),
     genderPref: ride.genderPref as GenderPref,
     timeAway: timeAwayLabel(departure, refNow),
     isYours,
