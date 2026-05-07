@@ -249,6 +249,19 @@ export type PostRidePayload = Pick<
   "airport" | "terminal" | "departureDate" | "time" | "totalSpots" | "genderPref"
 >;
 
+function initialPostRideState(iv?: Partial<PostRideFormState>): PostRideFormState {
+  const slot = defaultDepartureSlotNyc();
+  return {
+    airport: "JFK",
+    terminal: "",
+    departureDate: slot.ymd,
+    time: slot.time,
+    totalSpots: 3,
+    genderPref: "NONE",
+    ...iv,
+  };
+}
+
 function PostRideModal({
   open,
   onClose,
@@ -264,18 +277,11 @@ function PostRideModal({
   initialValue?: Partial<PostRideFormState>;
   submitLabel?: string;
 }) {
-  const [form, setForm] = useState<PostRideFormState>(() => {
-    const slot = defaultDepartureSlotNyc();
-    return {
-      airport: "JFK",
-      terminal: "",
-      departureDate: slot.ymd,
-      time: slot.time,
-      totalSpots: 3,
-      genderPref: "NONE",
-      ...initialValue,
-    };
-  });
+  const [form, setForm] = useState<PostRideFormState>(() => initialPostRideState(initialValue));
+  /** Lets user clear/retype spots; blurred/submit coerce to ≥1 via `form.totalSpots`. */
+  const [spotsInput, setSpotsInput] = useState(() =>
+    String(initialPostRideState(initialValue).totalSpots)
+  );
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -289,7 +295,11 @@ function PostRideModal({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!form.departureDate || form.totalSpots < 1) return;
+    const trimmedSpots = spotsInput.trim();
+    if (!form.departureDate || trimmedSpots === "") return;
+    const parsedSpots = parseInt(trimmedSpots, 10);
+    if (Number.isNaN(parsedSpots)) return;
+    const totalSpots = Math.max(1, parsedSpots);
     const t = form.time.split(":");
     const h = parseInt(t[0] ?? "14", 10);
     const m = parseInt(t[1] ?? "0", 10);
@@ -301,7 +311,7 @@ function PostRideModal({
         terminal: form.terminal.trim(),
         departureDate: form.departureDate,
         time: `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`,
-        totalSpots: form.totalSpots,
+        totalSpots,
         genderPref: form.genderPref,
       });
       if (ok) onClose();
@@ -411,14 +421,22 @@ function PostRideModal({
               type="number"
               min={1}
               step={1}
-              required
-              value={form.totalSpots}
-              onChange={(e) => {
-                const n = parseInt(e.target.value, 10);
-                setForm((f) => ({
-                  ...f,
-                  totalSpots: Number.isNaN(n) ? f.totalSpots : Math.max(1, n),
-                }));
+              value={spotsInput}
+              onChange={(e) => setSpotsInput(e.target.value)}
+              onBlur={() => {
+                const trimmed = spotsInput.trim();
+                if (trimmed === "") {
+                  setSpotsInput(String(form.totalSpots));
+                  return;
+                }
+                const n = parseInt(trimmed, 10);
+                if (Number.isNaN(n)) {
+                  setSpotsInput(String(form.totalSpots));
+                  return;
+                }
+                const next = Math.max(1, n);
+                setForm((f) => ({ ...f, totalSpots: next }));
+                setSpotsInput(String(next));
               }}
               className="w-full rounded-xl border border-black/10 bg-white px-3 py-2.5 text-[13px] text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#4A7FD4]/40"
             />
