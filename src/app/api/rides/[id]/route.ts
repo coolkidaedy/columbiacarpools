@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isDepartureInFuture, maxBookingYmdNyc, todayYmdNyc, utcFromNycWallClock } from "@/lib/nyc-datetime";
@@ -65,7 +66,20 @@ function validateRideInput(o: Record<string, unknown>) {
 async function requireOwnedOpenRide(id: string, userId: string) {
   return prisma.ride.findFirst({
     where: { id, posterId: userId, status: "OPEN" },
-    select: { id: true },
+    select: {
+      id: true,
+      posterId: true,
+      airport: true,
+      terminal: true,
+      departureTime: true,
+      flightTime: true,
+      maxRiders: true,
+      genderPref: true,
+      notes: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+    },
   });
 }
 
@@ -102,16 +116,56 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     );
   }
 
-  await prisma.ride.update({
-    where: { id },
-    data: {
-      airport: parsed.airport,
-      terminal: parsed.terminal,
-      departureTime: parsed.departureTime,
-      flightTime: parsed.departureTime,
-      maxRiders: parsed.maxRiders,
-      genderPref: parsed.genderPref,
-    },
+  await prisma.$transaction(async (tx) => {
+    const updatedRide = await tx.ride.update({
+      where: { id },
+      data: {
+        airport: parsed.airport,
+        terminal: parsed.terminal,
+        departureTime: parsed.departureTime,
+        flightTime: parsed.departureTime,
+        maxRiders: parsed.maxRiders,
+        genderPref: parsed.genderPref,
+      },
+    });
+
+    const before: Prisma.JsonObject = {
+      id: owned.id,
+      posterId: owned.posterId,
+      airport: owned.airport,
+      terminal: owned.terminal,
+      departureTime: owned.departureTime.toISOString(),
+      flightTime: owned.flightTime.toISOString(),
+      maxRiders: owned.maxRiders,
+      genderPref: owned.genderPref,
+      notes: owned.notes,
+      status: owned.status,
+      createdAt: owned.createdAt.toISOString(),
+      updatedAt: owned.updatedAt.toISOString(),
+    };
+    const after: Prisma.JsonObject = {
+      id: updatedRide.id,
+      posterId: updatedRide.posterId,
+      airport: updatedRide.airport,
+      terminal: updatedRide.terminal,
+      departureTime: updatedRide.departureTime.toISOString(),
+      flightTime: updatedRide.flightTime.toISOString(),
+      maxRiders: updatedRide.maxRiders,
+      genderPref: updatedRide.genderPref,
+      notes: updatedRide.notes,
+      status: updatedRide.status,
+      createdAt: updatedRide.createdAt.toISOString(),
+      updatedAt: updatedRide.updatedAt.toISOString(),
+    };
+
+    await tx.rideAuditLog.create({
+      data: {
+        rideId: updatedRide.id,
+        action: "UPDATED",
+        actorUserId: user.id,
+        snapshot: { before, after },
+      },
+    });
   });
   return NextResponse.json({ ok: true });
 }
@@ -124,8 +178,17 @@ export async function DELETE(_request: Request, context: { params: Promise<{ id:
     where: { id, posterId: user.id },
     select: {
       id: true,
+      posterId: true,
       airport: true,
+      terminal: true,
       departureTime: true,
+      flightTime: true,
+      maxRiders: true,
+      genderPref: true,
+      notes: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
       requests: {
         where: { status: "ACCEPTED" },
         select: {
@@ -137,6 +200,30 @@ export async function DELETE(_request: Request, context: { params: Promise<{ id:
   if (!owned) return NextResponse.json({ error: "Ride not found" }, { status: 404 });
 
   await prisma.$transaction(async (tx) => {
+    const snapshot: Prisma.JsonObject = {
+      id: owned.id,
+      posterId: owned.posterId,
+      airport: owned.airport,
+      terminal: owned.terminal,
+      departureTime: owned.departureTime.toISOString(),
+      flightTime: owned.flightTime.toISOString(),
+      maxRiders: owned.maxRiders,
+      genderPref: owned.genderPref,
+      notes: owned.notes,
+      status: owned.status,
+      createdAt: owned.createdAt.toISOString(),
+      updatedAt: owned.updatedAt.toISOString(),
+      acceptedRiderCount: owned.requests.length,
+      acceptedRiderEmails: owned.requests.map((request) => request.requester.email),
+    };
+    await tx.rideAuditLog.create({
+      data: {
+        rideId: id,
+        action: "DELETED",
+        actorUserId: user.id,
+        snapshot,
+      },
+    });
     await tx.report.deleteMany({ where: { rideId: id } });
     await tx.joinRequest.deleteMany({ where: { rideId: id } });
     await tx.ride.delete({ where: { id } });

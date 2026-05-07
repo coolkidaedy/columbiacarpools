@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { groupRidesForDashboard, type RideWithRequestStatuses } from "@/lib/rides-mapper";
@@ -127,20 +128,46 @@ export async function POST(request: Request) {
     );
   }
   const term = terminal.trim();
+  const ride = await prisma.$transaction(async (tx) => {
+    const createdRide = await tx.ride.create({
+      data: {
+        posterId: user.id,
+        airport: airport as Airport,
+        terminal: term || null,
+        departureTime,
+        flightTime: departureTime,
+        maxRiders: totalSpots,
+        genderPref: genderPref as GenderPref,
+      },
+      include: {
+        requests: { select: { status: true } },
+      },
+    });
 
-  const ride = await prisma.ride.create({
-    data: {
-      posterId: user.id,
-      airport: airport as Airport,
-      terminal: term || null,
-      departureTime,
-      flightTime: departureTime,
-      maxRiders: totalSpots,
-      genderPref: genderPref as GenderPref,
-    },
-    include: {
-      requests: { select: { status: true } },
-    },
+    const snapshot: Prisma.JsonObject = {
+      id: createdRide.id,
+      posterId: createdRide.posterId,
+      airport: createdRide.airport,
+      terminal: createdRide.terminal,
+      departureTime: createdRide.departureTime.toISOString(),
+      flightTime: createdRide.flightTime.toISOString(),
+      maxRiders: createdRide.maxRiders,
+      genderPref: createdRide.genderPref,
+      notes: createdRide.notes,
+      status: createdRide.status,
+      createdAt: createdRide.createdAt.toISOString(),
+      updatedAt: createdRide.updatedAt.toISOString(),
+    };
+
+    await tx.rideAuditLog.create({
+      data: {
+        rideId: createdRide.id,
+        action: "CREATED",
+        actorUserId: user.id,
+        snapshot,
+      },
+    });
+    return createdRide;
   });
 
   return NextResponse.json({ id: ride.id }, { status: 201 });

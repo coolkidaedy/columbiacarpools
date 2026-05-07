@@ -39,6 +39,12 @@ enum RideStatus {
   CANCELLED
 }
 
+enum RideAuditAction {
+  CREATED
+  UPDATED
+  DELETED
+}
+
 enum PreferredCommunication {
   EMAIL
   PHONE
@@ -86,6 +92,18 @@ model Ride {
   @@index([airport])
   @@index([departureTime])
   @@index([status])
+}
+
+model RideAuditLog {
+  id          String          @id @default(cuid())
+  rideId      String
+  action      RideAuditAction
+  actorUserId String
+  snapshot    Json
+  createdAt   DateTime        @default(now())
+
+  @@index([rideId, createdAt])
+  @@index([action, createdAt])
 }
 
 model JoinRequest {
