@@ -58,7 +58,7 @@ model User {
   name      String?
   school    String?  // "CC" | "SEAS" | "Barnard" | "GS" | "Graduate" | "Other"
   schoolCustom String? // only set when school == "Other"
-  year      String?  // "2025" | "2026" | "2027" | "2028" | "Graduate" | "Other"
+  year      String?  // "2026" | "2027" | "2028" | "2029" | "Graduate" | "Other"
   yearCustom String? // only set when year == "Other"
   phoneNumber String?
   preferredCommunication PreferredCommunication?

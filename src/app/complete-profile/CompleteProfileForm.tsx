@@ -61,10 +61,10 @@ export function CompleteProfileForm({ action }: Props) {
           <option value="" disabled>
             Select your class year
           </option>
-          <option value="2025">2025</option>
           <option value="2026">2026</option>
           <option value="2027">2027</option>
           <option value="2028">2028</option>
+          <option value="2029">2029</option>
           <option value="Graduate">Graduate</option>
           <option value="Other">Other</option>
         </select>
