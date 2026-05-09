@@ -256,7 +256,7 @@ function initialPostRideState(iv?: Partial<PostRideFormState>): PostRideFormStat
     terminal: "",
     departureDate: slot.ymd,
     time: slot.time,
-    totalSpots: 3,
+    totalSpots: 4,
     genderPref: "NONE",
     ...iv,
   };
