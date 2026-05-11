@@ -1,4 +1,4 @@
-import { formatTime12hNyc } from "@/lib/nyc-datetime";
+import { formatTime12hNyc, formatWeekdayMonthDayFromNycYmd, nycYmd } from "@/lib/nyc-datetime";
 import { getAppBaseUrl } from "@/lib/app-url";
 import { sendTransactionalEmail } from "@/lib/email/mailer";
 
@@ -24,8 +24,9 @@ export function publicRequesterLabel(name: string | null): string {
 }
 
 function rideSummaryHtml(airport: string, departure: Date): string {
+  const dateLabel = formatWeekdayMonthDayFromNycYmd(nycYmd(departure));
   const when = formatTime12hNyc(departure);
-  return `${airport} · Leaving campus at ${when} (EST)`;
+  return `${airport} · ${dateLabel} · Leaving campus at ${when} (Eastern)`;
 }
 
 function formatPhoneNumber(phoneNumber: string | null): string {
