@@ -8,7 +8,7 @@ import {
   todayYmdNyc,
   tomorrowYmdNyc,
 } from "@/lib/nyc-datetime";
-import type { Airport, GenderPref, RideGroup, RideListItem } from "@/types/rides";
+import type { Airport, DashboardRidesPayload, GenderPref, RideGroup, RideListItem } from "@/types/rides";
 
 export type RideWithRequestStatuses = Ride & {
   requests: Pick<JoinRequest, "status">[];
@@ -51,7 +51,7 @@ export function groupRidesForDashboard(
   rides: RideWithRequestStatuses[],
   currentUserId: string,
   refNow: Date = new Date()
-): RideGroup[] {
+): DashboardRidesPayload {
   const sorted = [...rides].sort(
     (a, b) => new Date(a.departureTime).getTime() - new Date(b.departureTime).getTime()
   );
@@ -60,18 +60,35 @@ export function groupRidesForDashboard(
   const tomorrow = tomorrowYmdNyc(refNow);
   const order: string[] = [];
   const byYmd = new Map<string, RideListItem[]>();
+  const myRides: RideListItem[] = [];
 
   for (const ride of sorted) {
+    const item = mapRideToListItem(ride, currentUserId, refNow);
+    if (item.isYours) {
+      myRides.push(item);
+      continue;
+    }
     const ymd = nycYmd(new Date(ride.departureTime));
     if (!byYmd.has(ymd)) {
       order.push(ymd);
       byYmd.set(ymd, []);
     }
-    byYmd.get(ymd)!.push(mapRideToListItem(ride, currentUserId, refNow));
+    byYmd.get(ymd)!.push(item);
   }
 
-  return order.map((ymd) => ({
+  myRides.sort(
+    (a, b) =>
+      a.departureDate.localeCompare(b.departureDate) || a.departureTime24.localeCompare(b.departureTime24)
+  );
+
+  for (const rides of byYmd.values()) {
+    rides.sort((a, b) => a.departureTime24.localeCompare(b.departureTime24));
+  }
+
+  const groups: RideGroup[] = order.map((ymd) => ({
     date: rideGroupLabel(ymd, today, tomorrow),
     rides: byYmd.get(ymd)!,
   }));
+
+  return { myRides, groups };
 }

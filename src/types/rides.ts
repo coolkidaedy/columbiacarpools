@@ -22,3 +22,9 @@ export type RideGroup = {
   date: string;
   rides: RideListItem[];
 };
+
+/** Dashboard payload: your rides (pinned) + everyone else's rides by date. */
+export type DashboardRidesPayload = {
+  myRides: RideListItem[];
+  groups: RideGroup[];
+};

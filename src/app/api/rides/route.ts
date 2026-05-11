@@ -48,8 +48,8 @@ export async function GET() {
     orderBy: { departureTime: "asc" },
   });
 
-  const groups = groupRidesForDashboard(rides as RideWithRequestStatuses[], user.id, now);
-  return NextResponse.json({ groups });
+  const { myRides, groups } = groupRidesForDashboard(rides as RideWithRequestStatuses[], user.id, now);
+  return NextResponse.json({ myRides, groups });
 }
 
 export async function POST(request: Request) {

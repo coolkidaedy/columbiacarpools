@@ -565,14 +565,17 @@ function ManageRequestsModal({
 
 export default function RidesDashboard({
   userName,
+  initialMyRides,
   initialRideGroups,
   initialJoinRequests = [],
 }: {
   userName?: string | null;
+  initialMyRides: RideListItem[];
   initialRideGroups: RideGroup[];
   initialJoinRequests?: { rideId: string; status: "PENDING" | "ACCEPTED" }[];
 }) {
   const router = useRouter();
+  const [myRides, setMyRides] = useState(initialMyRides);
   const [rideGroups, setRideGroups] = useState(initialRideGroups);
   const [joinStatusByRideId, setJoinStatusByRideId] = useState<Record<string, "PENDING" | "ACCEPTED">>(() =>
     Object.fromEntries(initialJoinRequests.map((j) => [j.rideId, j.status]))
@@ -593,6 +596,10 @@ export default function RidesDashboard({
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setMyRides(initialMyRides);
+  }, [initialMyRides]);
+
+  useEffect(() => {
     setRideGroups(initialRideGroups);
   }, [initialRideGroups]);
 
@@ -608,7 +615,10 @@ export default function RidesDashboard({
     try {
       const res = await fetch("/api/rides", { cache: "no-store" });
       if (!res.ok) return;
-      const j = (await res.json()) as { groups?: unknown };
+      const j = (await res.json()) as { myRides?: unknown; groups?: unknown };
+      if (Array.isArray(j.myRides)) {
+        setMyRides(j.myRides as RideListItem[]);
+      }
       if (Array.isArray(j.groups)) {
         setRideGroups(j.groups as RideGroup[]);
       }
@@ -650,9 +660,19 @@ export default function RidesDashboard({
     [rideGroups, activeFilter]
   );
 
+  const filteredMyRides = useMemo(
+    () =>
+      activeFilter === "All airports"
+        ? myRides
+        : myRides.filter((r) => r.airport === activeFilter),
+    [myRides, activeFilter]
+  );
+
   const totalListed = useMemo(
-    () => rideGroups.reduce((n, g) => n + g.rides.length, 0),
-    [rideGroups]
+    () =>
+      filteredMyRides.length +
+      filteredGroups.reduce((n, g) => n + g.rides.length, 0),
+    [filteredMyRides, filteredGroups]
   );
 
   const handleRequest = useCallback(async (rideId: string) => {
@@ -955,9 +975,42 @@ export default function RidesDashboard({
         </div>
 
         <div className="animate-fade-up flex flex-col gap-3 [animation-delay:200ms]">
-          {filteredGroups.length === 0 ? (
+          {filteredMyRides.length === 0 && filteredGroups.length === 0 ? (
             <p className="rounded-2xl border border-black/[0.08] bg-white px-4 py-8 text-center text-[14px] leading-relaxed text-[#888] sm:px-6 sm:py-10">
               No upcoming rides in the next 12 months. Post one to get started.
+            </p>
+          ) : null}
+          {filteredMyRides.length > 0 ? (
+            <div className="mb-2">
+              <p className="mb-3 mt-2 text-[11px] font-medium uppercase tracking-[0.1em] text-[#4A7FD4]">
+                My rides
+              </p>
+              <div className="flex flex-col gap-3">
+                {filteredMyRides.map((ride) => (
+                  <RideCard
+                    key={ride.id}
+                    ride={ride}
+                    joinStatus={joinStatusByRideId[ride.id]}
+                    joinBusy={joinBusyRideId === ride.id}
+                    leaveBusy={leaveBusyRideId === ride.id}
+                    onRequest={handleRequest}
+                    onLeave={handleLeaveRide}
+                    onEdit={(r) => {
+                      setPostError(null);
+                      setEditingRide(r);
+                    }}
+                    onDelete={deleteBusyId ? undefined : handleDeleteRide}
+                    onManageRequests={openManageRequests}
+                    showManageRequests={isMounted}
+                    showJoinActions={isMounted}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {filteredGroups.length > 0 && filteredMyRides.length > 0 ? (
+            <p className="mb-1 mt-4 text-[11px] font-medium uppercase tracking-[0.1em] text-[#bbb]">
+              All rides
             </p>
           ) : null}
           {filteredGroups.map((group) => (

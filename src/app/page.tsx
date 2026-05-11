@@ -56,7 +56,7 @@ export default async function Home() {
     orderBy: { departureTime: "asc" },
   });
 
-  const initialRideGroups = groupRidesForDashboard(
+  const { myRides: initialMyRides, groups: initialRideGroups } = groupRidesForDashboard(
     dbRides as RideWithRequestStatuses[],
     user.id,
     now
@@ -65,6 +65,7 @@ export default async function Home() {
   return (
     <RidesDashboard
       userName={user.name ?? session.user.email}
+      initialMyRides={initialMyRides}
       initialRideGroups={initialRideGroups}
       initialJoinRequests={initialJoinRequests}
     />
